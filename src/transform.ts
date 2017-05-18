@@ -7,6 +7,20 @@ import * as kt from "karma-typescript/src/api/transforms";
 
 let log: log4js.Logger;
 
+// detect module.exports = xx
+let isStatementEs5Export = (expression: ESTree.Expression): boolean => {
+    if (expression.type === "AssignmentExpression"
+        && expression.operator === "="
+        && expression.left.type === "MemberExpression"
+        && expression.left.object.type === "Identifier"
+        && expression.left.property.type === "Identifier") {
+        return expression.left.object.name === "module" && expression.left.property.name === "exports";
+    }
+    else {
+        return false;
+    }
+};
+
 let isEs6 = (ast: ESTree.Program): boolean => {
     if (ast.body) {
         for (let statement of ast.body) {
@@ -16,6 +30,10 @@ let isEs6 = (ast: ESTree.Program): boolean => {
                 case "ExportNamedDeclaration":
                 case "ImportDeclaration":
                     return true;
+                case "ExpressionStatement":
+                    if (isStatementEs5Export(statement.expression)) {
+                        return true;
+                    }
                 default:
             }
         }
